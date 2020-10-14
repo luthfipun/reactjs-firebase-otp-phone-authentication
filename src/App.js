@@ -1,9 +1,8 @@
-import React, { Component } from 'react';
-import * as firebase from "firebase/app";
-import * as firebaseui from "firebaseui";
-import "firebase/auth";
+import { Button, Card, Col, Divider, Form, Input, message, Row } from 'antd';
 import 'antd/dist/antd.css';
-import { Button, Card, Row, Col, Form, InputNumber, Input, Divider, message } from 'antd';
+import * as firebase from "firebase/app";
+import "firebase/auth";
+import React, { Component } from 'react';
 
 
 const firebaseConfig = {
@@ -14,33 +13,24 @@ const firebaseConfig = {
     storageBucket: "fir-otp-demo-e414f.appspot.com",
     messagingSenderId: "389597311804",
     appId: "1:389597311804:web:ce701eb314ec31daf9e439"
-};
+}
 
-firebase.initializeApp(firebaseConfig);
-
-// const uiConfig = {
-//   signInSuccessUrl: "http://localhost:3000/",
-//   signInOptions: [firebase.auth.PhoneAuthProvider.PROVIDER_ID],
-//   tosUrl: "http://localhost:3000/"
-// };
-
-// const ui = new firebaseui.auth.AuthUI(firebase.auth());
-// ui.start("#firebase-container", uiConfig)
+firebase.initializeApp(firebaseConfig)
 
 class App extends Component {
 
   state = {
     phone: '',
     isAction: false,
-    code: 0,
-    verificationId: ''
+    code: '',
+    verificationId: '',
+    isLoading: false
   }
 
   componentDidMount() {
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container",
     {
        size:"invisible"
-        // other options
     });
   }
 
@@ -52,6 +42,8 @@ class App extends Component {
       return
     }
 
+    this.setState({isLoading: true})
+
     const phoneNumber = this.state.phone;
     const appVerifier = window.recaptchaVerifier;
     firebase
@@ -61,33 +53,41 @@ class App extends Component {
         this.setState({verificationId: confirmResult.verificationId, isAction: true})
         window.confirmationResult = confirmResult;
         message.success("Code sent")
+        this.setState({isLoading: false})
       })
       .catch(error => {
         message.error(error)
+        this.setState({isLoading: false})
       });
   }
 
   onconfirm = () => {
-    const {verificationId, phone, code} = this.state
+    const {code} = this.state
 
     if (!code) {
       message.warn("Code is empty")
       return
     }
 
+    this.setState({isLoading: true})
+
     window.confirmationResult.confirm(code).then(function(result){
       console.log(result)
       message.success("Sign in successfully")
+      this.setState({isLoading: false})
     })
     .catch((error) => {
       console.log(error)
-      message.error("Code is wrong")
+      if (error.code !== undefined) {
+          message.error("Code is wrong")
+      }
+      this.setState({isLoading: false})
     })
   }
 
   render() {
 
-    const {isAction, phone, code} = this.state
+    const {isAction, phone, code, isLoading} = this.state
 
     const viewSignIn = (
       <div>
@@ -95,10 +95,17 @@ class App extends Component {
         <Divider />
         <Form layout="vertical">
           <Form.Item label="Phone Number">
-            <Input id="recaptcha-container" onChange={(e) => this.setState({phone: e.target.value})} value={phone} />
+            <Input 
+              id="recaptcha-container" 
+              onChange={(e) => this.setState({phone: e.target.value})}
+              value={phone}
+              placeholder="Phone number with country code" />
           </Form.Item>
           <Form.Item>
-            <Button onClick={() => this.onsubmit()} type="primary">Sign In</Button>
+            <Button
+              loading={isLoading}
+              onClick={() => this.onsubmit()} 
+              type="primary">Sign In</Button>
           </Form.Item>
         </Form>
       </div>
@@ -110,25 +117,34 @@ class App extends Component {
         <Divider />
         <Form layout="vertical">
           <Form.Item label="Verification Code">
-            <Input id="recaptcha-container" onChange={(e) => this.setState({code: e.target.value})} value={code} />
+            <Input 
+              id="recaptcha-container" 
+              onChange={(e) => this.setState({code: e.target.value})} 
+              value={code}
+              placeholder="6-digit verification code" />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" onClick={() => this.onconfirm()}>Confirmation</Button>
+            <Button 
+              loading={isLoading}
+              type="primary" 
+              onClick={() => this.onconfirm()}>Confirmation</Button>
           </Form.Item>
         </Form>
       </div>
     )
 
     return (
-      <Row align="middle" justify="center">
-          <Col xs={24} md={5}>
-            <Card>
-              {
-                isAction ? viewVerification : viewSignIn
-              }
-            </Card>
-          </Col>
-        </Row>
+        <>
+          <Row align="middle" justify="center">
+            <Col xs={24} md={5}>
+              <Card>
+                {
+                  isAction ? viewVerification : viewSignIn
+                }
+              </Card>
+            </Col>
+          </Row>
+        </>
     )
   }
 }
