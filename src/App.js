@@ -4,7 +4,7 @@ import * as firebase from "firebase/app";
 import "firebase/auth";
 import React, { Component } from 'react';
 
-
+ // Replace with real firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAPxvdqU5ud7JBthcbWLJMRs_XL1j8EmCY",
     authDomain: "fir-otp-demo-e414f.firebaseapp.com",
